@@ -2,9 +2,14 @@ import praw
 import argparse
 """
     ToDo:
-        -Add in documentation strings to functions
+        -Add in documentation strings to functions and add comments so it's
+        easier to follow code
         -Check the fetching of posts actually stops when tot_posts is found
         rather than finding say 25 long and only displaying 10 for instance
+            -maybe add in option to display the top say 15 but fetch the top 20
+            or top 16 etc at a time?
+                -But at the very least stop it searching for 25 epics when
+                you only want one
         -Make an authors blacklist as well?
         -Flair filter
             -extend to persistant menu
@@ -16,6 +21,10 @@ import argparse
             menu
         -Pause it so need to press enter to finish reading post
             -only if menu loop is enabled
+        -Get_top can cause an error if the number of top posts in the last
+        24 hours (for example) is less than the number of posts you're trying
+        to fetch. (So it gets say 7 and then tries to call posts[8] which
+        doesn't exist and gives a KeyError)
 """
 
 # -*- coding: utf-8 -*-
@@ -26,9 +35,9 @@ Created on Wed Sep 21 20:21:18 2016
 """
 
 
-def read_in_submissions(url='https://www.reddit.com/r/talesfromtechsupport',
-                        count=10, num_sub=25, after=''):
-    if num_sub >= 1000:
+def read_in_submissions(subreddit_name='TalesFromTechSupport',
+                        sort='hot', time='', count=10, num_sub=25, after=''):
+    if num_sub >= 100:
         pass
     elif num_sub > 25:
         num_sub = num_sub * 2
@@ -36,14 +45,26 @@ def read_in_submissions(url='https://www.reddit.com/r/talesfromtechsupport',
         num_sub = 25
     para = {}
     para['count'] = count  # Not sure if I need this, should probably check
-    para['limit'] = num_sub
-    para['after'] = after
+    para['limit'] = num_sub  # Number of posts to fetch at a time
+    para['after'] = after  # ID of last post fetched
+    para['time'] = time  # The time over which to get posts from
     r = praw.Reddit('redditTFTS')
-    return r.get_content(url, params=para)
+    if sort == 'hot':
+        return r.get_subreddit(subreddit_name).get_hot(params=para)
+    elif sort == 'new':
+        return r.get_subreddit(subreddit_name).get_new(params=para)
+    elif sort == 'rising':
+        return r.get_subreddit(subreddit_name).get_rising(params=para)
+    elif sort == 'controversial':
+        return r.get_subreddit(subreddit_name).get_controversial(params=para)
+    elif sort == 'top':
+        return r.get_subreddit(subreddit_name).get_top(params=para)
+    elif sort == 'gilded':
+        return r.get_subreddit(subreddit_name).get_gilded(params=para)
 
 
 def load_posts(s):
-    submissions = read_in_submissions(num_sub=s)
+    submissions = read_in_submissions(num_sub=s, sort=args.sort)
     i = 1
     to_fetch = 0
     last = ''
@@ -61,7 +82,8 @@ def load_posts(s):
         if i > tot_posts:
             break
     while to_fetch > 0:
-        submissions = read_in_submissions(num_sub=s, after=last)
+        submissions = read_in_submissions(num_sub=s, after=last,
+                                          sort=args.sort)
         for submission in submissions:
             if blacklist(submission.title) is True:
                 last = submission.name
@@ -89,7 +111,6 @@ def blacklist(title):
                     return True
             return False
     except FileNotFoundError:
-        print('Error, blacklist.txt not found. Assumming no blacklist...')
         return False
 
 
@@ -163,18 +184,28 @@ def get_arguments():
                                  'long', 'Long', 'epic', 'Epic',
                                  'best', 'Best', 'BEST'],
                         required=False)
-    parser.add_argument('-n', '--num_posts', type=int, required=False)
-    args = parser.parse_args()
-    if args.flair is not None:
-        args.flair = args.flair.lower()
-    return args
+    parser.add_argument('-n', '--num_posts', type=int, default=10,
+                        required=False)
+    parser.add_argument('-s', '--sort',
+                        choices=['hot', 'new', 'rising', 'controversial',
+                                 'top', 'gilded'],
+                        default='hot', required=False)
+    arguments = parser.parse_args()
+    if arguments.flair is not None:
+        arguments.flair = arguments.flair.lower()
+    if isinstance(arguments.num_posts, int):
+        arguments.num_posts = arguments.num_posts
+    else:
+        arguments.num_posts = 10
+    if arguments.sort is not None:
+        pass
+    else:
+        arguments.sort = ''
+    return arguments
 
 
 args = get_arguments()
-if isinstance(args.num_posts, int):
-    tot_posts = args.num_posts
-else:
-    tot_posts = 10
+tot_posts = args.num_posts
 title()
 posts = {}
 posts = load_posts(tot_posts)

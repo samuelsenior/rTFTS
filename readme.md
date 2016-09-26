@@ -1,1 +1,4 @@
-A simple python script that can be run in terminal and  prints the titles of the top ten posts from reddit.com/r/talesfromtechsupport (sorted by 'hot'), from which the user can select one to read. Posts (such as sticked mod announcements) can be be excluded by adding their titles to the blacklist file.
+# rTFTS
+A python script that views the TalesFromTechSupport subreddit in Terminal. Display the top n number of posts, filter them by flair, sort them by hot, new, rising, etc and choose which one you want to read.
+
+To choose the number of posts, flair, and sorting method call rTFTS in Terminal with the arguments -n [number], -f [flair], and -s [sort], where [number] is the number of posts to display (default is 10), [flair] is the flair (default is no flair filtering) and [sort] is the method of sorting (default is hot).
