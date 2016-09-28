@@ -1,26 +1,20 @@
 import praw
 import argparse
+import sys
 """
     ToDo:
         -Add in documentation strings to functions and add comments so it's
         easier to follow code
-        -Check the fetching of posts actually stops when tot_posts is found
-        rather than finding say 25 long and only displaying 10 for instance
+        -Check the fetching of posts actually stops when args.num_posts is
+        found rather than finding say 25 long and only displaying 10 for
+        instance
             -maybe add in option to display the top say 15 but fetch the top 20
             or top 16 etc at a time?
                 -But at the very least stop it searching for 25 epics when
                 you only want one
         -Make an authors blacklist as well?
-        -Flair filter
-            -extend to persistant menu
         -Make it display the top len(posts) rather than always top ten
         -Add in scrolling down to next n posts
-        -Add in menu persistance option
-            -e.g. called with tfts -p
-            -pause after reading post and then enter takes it back to the main
-            menu
-        -Pause it so need to press enter to finish reading post
-            -only if menu loop is enabled
         -Get_top can cause an error if the number of top posts in the last
         24 hours (for example) is less than the number of posts you're trying
         to fetch. (So it gets say 7 and then tries to call posts[8] which
@@ -79,7 +73,7 @@ def load_posts(s):
                         submission.permalink)
             i = i + 1
         last = submission.name
-        if i > tot_posts:
+        if i > args.num_posts:
             break
     while to_fetch > 0:
         submissions = read_in_submissions(num_sub=s, after=last,
@@ -126,14 +120,14 @@ def flaircheck(flair):
 
 
 def title():
-    print("\n------------------")
-    print("    RedditTFTS")
-    print("------------------")
+    print("\n-------------------")
+    print("       rTFTS")
+    print("-------------------")
     print("Top ten posts:")
 
 
 def print_top_ten(posts):
-    for i in range(1, tot_posts + 1):
+    for i in range(1, args.num_posts + 1):
         print("{}: ".format(i), end='')
         print_post(posts, s=i, title=2, author=2, flair=2)
 
@@ -157,24 +151,61 @@ def print_post(posts, s, id=0, title=0, selftext=0, author=0, flair=0):
         print(" ({})".format((posts[s][4])))
 
 
-def get_choice(tot_posts):
+def get_choice():
     action = input("\nSelect post ('0' for exit): ")
     if action.isnumeric():
         action = int(action)
-        if action > 0 and action <= tot_posts:
+        if action > 0 and action <= args.num_posts:
             print("\n--------------------------")
             print_post(posts, s=int(action), title=2, author=2, flair=2)
             print("--------------------------")
             print_post(posts, int(action), selftext=1)
         elif action == 0:
             print("Exiting...")
-            exit
-        elif action > tot_posts:
+            sys.exit()
+        elif action > args.num_posts:
             print("Error, choice entered greater than",
-                  "the possible choices. Exiting...")
+                  "the possible choices")
+
+    elif((action.split()[0] == '-f' or action.split()[0] == '--flair')
+         and persistance is True):
+        choices = ['short', 'Short', 'medium', 'Medium', 'long', 'Long',
+                   'epic', 'Epic', 'best', 'Best', 'BEST']
+        if len(action.split()) == 1:
+            print('Error, no flair given')
+        elif choices.count(action.split()[1]) == 1:
+            args.flair = action.split()[1]
+            args.flair = args.flair.lower()
+            print("{} {} {}".format('Flair of type', args.flair, 'set'))
+        elif choices.count(action.split()[1]) == 0:
+            print("{} {} {} {}".format('Error, undefined flair of',
+                  action.split()[1], "given. \nPlease choose from types:",
+                  "'Short', 'Medium', 'Long', 'Epic'."))
+
+    elif((action.split()[0] == '-n' or action.split()[0] == '--num_posts')
+         and persistance is True):
+        if len(action.split()) == 1:
+            print('Error, no number given')
+        elif not action.split()[1].isnumeric():
+            print('Error, non-numeric string given as arguemnt')
+            print('Error, type int not given')
+        else:
+            args.num_posts = int(action.split()[1])
+
+    elif((action.split()[0] == '-s' or action.split()[0] == '--sort')
+         and persistance is True):
+        choices = ['hot', 'new', 'rising', 'controversial', 'top', 'gilded']
+        if len(action.split()) == 1:
+            print('Error, no sorting method given')
+        elif choices.count(action.split()[1]) == 1:
+            args.sort = action.split()[1]
+        elif choices.count(action.split()[1]) == 0:
+            print("{} {} {} {}".format('Error, undefined sorting method of',
+                  action.split()[1], "given. \nPlease choose from types:",
+                  "'hot', 'new', 'rising' etc."))
+
     else:
-        print("Error, choice is not numeric. Exiting...")
-        exit
+        print("Error, choice is not numeric")
 
 
 def get_arguments():
@@ -190,6 +221,8 @@ def get_arguments():
                         choices=['hot', 'new', 'rising', 'controversial',
                                  'top', 'gilded'],
                         default='hot', required=False)
+    parser.add_argument('-p', '--persistance', choices=['True', 'False'],
+                        default=False, required=False)
     arguments = parser.parse_args()
     if arguments.flair is not None:
         arguments.flair = arguments.flair.lower()
@@ -201,13 +234,22 @@ def get_arguments():
         pass
     else:
         arguments.sort = ''
+    if arguments.persistance == 'True':
+        arguments.persistance = True
+    elif arguments.persistance == 'False':
+        arguments.persistance = False
     return arguments
 
 
 args = get_arguments()
-tot_posts = args.num_posts
-title()
-posts = {}
-posts = load_posts(tot_posts)
-print_top_ten(posts)
-get_choice(tot_posts)
+persistance = True
+while persistance:
+    if args.persistance is False:
+        persistance = False
+    title()
+    posts = {}
+    posts = load_posts(s=args.num_posts)
+    print_top_ten(posts)
+    get_choice()
+    if args.persistance is True:
+        input('< Press enter to continue > ')
