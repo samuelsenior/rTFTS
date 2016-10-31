@@ -263,7 +263,7 @@ def get_arguments():
                         required=False)  # Sorting method argument
     parser.add_argument('-p', '--persistance', choices=['True', 'true',
                                                         'False', 'false'],
-                        default=False,
+                        default='false',
                         required=False)  # Menu persistance argument
     arguments = parser.parse_args()
     if arguments.flair is not None:  # Check a flair has an argument
@@ -276,9 +276,10 @@ def get_arguments():
         pass
     else:  # If not, give it an empty string
         arguments.sort = ''
-    if arguments.persistance == 'True' or arguments.persistance == 'true':  # Set the strings to equiv bools
+    arguments.persistance = arguments.persistance.lower()
+    if arguments.persistance == 'true':  # Set the strings to equiv bools
         arguments.persistance = True
-    elif arguments.persistance == 'False' or arguments.persistance == 'false':
+    elif arguments.persistance == 'false':
         arguments.persistance = False
     return arguments
 
