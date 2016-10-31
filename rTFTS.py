@@ -22,6 +22,8 @@ import sys
         -Add config file for default values to be stored in
         -Tidy up code
             -Introduce a class or something to make it easier
+        -Colour code things like the flairs, e.g. each flair is displayed
+        in a different colour etc
 """
 
 # -*- coding: utf-8 -*-
@@ -259,7 +261,8 @@ def get_arguments():
                         choices=['hot', 'new', 'rising', 'controversial',
                                  'top', 'gilded'], default='hot',
                         required=False)  # Sorting method argument
-    parser.add_argument('-p', '--persistance', choices=['True', 'False'],
+    parser.add_argument('-p', '--persistance', choices=['True', 'true',
+                                                        'False', 'false'],
                         default=False,
                         required=False)  # Menu persistance argument
     arguments = parser.parse_args()
@@ -273,9 +276,9 @@ def get_arguments():
         pass
     else:  # If not, give it an empty string
         arguments.sort = ''
-    if arguments.persistance == 'True':  # Set the strings to equiv bools
+    if arguments.persistance == 'True' or arguments.persistance == 'true':  # Set the strings to equiv bools
         arguments.persistance = True
-    elif arguments.persistance == 'False':
+    elif arguments.persistance == 'False' or arguments.persistance == 'false':
         arguments.persistance = False
     return arguments
 
