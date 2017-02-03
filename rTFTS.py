@@ -24,6 +24,10 @@ import sys
             -Introduce a class or something to make it easier
         -Colour code things like the flairs, e.g. each flair is displayed
         in a different colour etc
+
+        -Currently broken:
+            -controversial and gilded sorting
+            -if a sorting has less results than the desired amount it crashes
 """
 
 # -*- coding: utf-8 -*-
@@ -49,19 +53,23 @@ def read_in_submissions(subreddit_name='TalesFromTechSupport',
     para['limit'] = num_sub  # Number of posts to fetch at a time
     para['after'] = after  # ID of last post fetched
     para['time'] = time  # The time over which to get posts from
-    r = praw.Reddit('redditTFTS')
+    reddit = praw.Reddit(client_id='ZqwhW0ovrIEkhQ',
+                         client_secret=None,
+                         redirect_uri='http://localhost:8080',
+                         user_agent='python:rTFTS:0.1.0 (by /u/rTFTS_bot)')
+    subreddit = reddit.subreddit(subreddit_name)
     if sort == 'hot':
-        return r.get_subreddit(subreddit_name).get_hot(params=para)
+        return subreddit.hot(params=para)
     elif sort == 'new':
-        return r.get_subreddit(subreddit_name).get_new(params=para)
+        return subreddit.new(params=para)
     elif sort == 'rising':
-        return r.get_subreddit(subreddit_name).get_rising(params=para)
+        return subreddit.rising(params=para)
     elif sort == 'controversial':
-        return r.get_subreddit(subreddit_name).get_controversial(params=para)
+        return subreddit.controversial(params=para)
     elif sort == 'top':
-        return r.get_subreddit(subreddit_name).get_top(params=para)
-    elif sort == 'gilded':
-        return r.get_subreddit(subreddit_name).get_gilded(params=para)
+        return subreddit.top(params=para)
+    # elif sort == 'gilded':
+    #    return subreddit.gilded(params=para)  # Currently broken
 
 
 def load_posts(s):
@@ -259,8 +267,9 @@ def get_arguments():
                         required=False)  # Number of posts to display argument
     parser.add_argument('-s', '--sort',
                         choices=['hot', 'new', 'rising', 'controversial',
-                                 'top', 'gilded'], default='hot',
-                        required=False)  # Sorting method argument
+                                 'top'], default='hot',
+                        required=False)  # Sorting method argument,
+    # 'gilded' currently removed as it's broken
     parser.add_argument('-p', '--persistance', choices=['True', 'true',
                                                         'False', 'false'],
                         default='false',
